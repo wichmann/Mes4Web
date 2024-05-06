@@ -2,8 +2,7 @@ package de.sayk.web;
 
 import java.io.File;
 import java.io.Serializable;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
+import java.rmi.RemoteException;
 
 import javax.annotation.PostConstruct;
 import javax.faces.application.FacesMessage;
@@ -17,6 +16,7 @@ import org.primefaces.model.menu.DefaultMenuModel;
 import org.primefaces.model.menu.DefaultSubMenu;
 import org.primefaces.model.menu.MenuModel;
 
+import de.sayk.ClientListener;
 import de.sayk.Dir;
 import de.sayk.MesTestClient;
 import de.sayk.ServerStartupListener;
@@ -26,7 +26,7 @@ import de.sayk.logging.Logger;
 
 @ManagedBean
 @ApplicationScoped
-public class MenuView implements Serializable {
+public class MenuView implements Serializable, ClientListener {
 
 	private static final long serialVersionUID = 1L;
 	private static Logger log = Logger.getLogger(MenuView.class.getName());
@@ -36,45 +36,20 @@ public class MenuView implements Serializable {
 
 	private MenuModel model;
 
-	private static boolean isRunningInTomcat() {
-		String environment = System.getProperty("catalina.base");
-		return environment.indexOf("eclipse") > -1;
-	}
-
-	private static String getHostAddress() {
-		String host = "localhost";
-
-		try {
-			host = InetAddress.getLocalHost().getHostAddress();
-		} catch (UnknownHostException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-		return host;
-	}
-
 	@PostConstruct
 	public void init() {
 
 		model = new DefaultMenuModel();
 
 		try {
-			String sqlFolder = Dir.getHomePath() + "sql";
+			ServerStartupListener.ms.addClientListener(this);
+		} catch (RemoteException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
 
-//			if (isRunningInTomcat()) {
-//				sqlFolder = "C:\\xampp\\tomcat\\webapps\\Mes4Web-1.0\\WEB-INF\\classes\\sql";
-//			}
-//
-//			File folder = new File(sqlFolder);
-//			
-//			System.out.println(sqlFolder);
-//   
-//			if (folder.exists() && folder.isDirectory()) {
-//				System.out.println("SQL Ordner gefunden");
-//			} else {
-//				System.out.println("SQL Ordner existiert nicht.");
-//			}
+		try {
+			String sqlFolder = Dir.getHomePath() + "sql";
 
 			// First submenu
 			DefaultSubMenu firstSubmenu = DefaultSubMenu.builder().label("Lernsituationen").build();
@@ -100,10 +75,10 @@ public class MenuView implements Serializable {
 			model.getElements().add(firstSubmenu);
 
 			// Second submenu
-			DefaultSubMenu secondSubmenu = DefaultSubMenu.builder().label("Navigations").build();
+			DefaultSubMenu secondSubmenu = DefaultSubMenu.builder().label("Funktionen").build();
 
 			item = DefaultMenuItem.builder().value("Neuen Auftrag anlegen...").icon("pi pi-external-link")
-					.url("http://" + getHostAddress() + ":8042/neworder").build();
+					.url("http://192.168.0.15:8042/neworder").build();
 			secondSubmenu.getElements().add(item);
 
 			item = DefaultMenuItem.builder().value("Starte Test SPS").icon("pi pi-server")
@@ -119,6 +94,7 @@ public class MenuView implements Serializable {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+
 	}
 
 	public MenuModel getModel() {
@@ -185,8 +161,24 @@ public class MenuView implements Serializable {
 	}
 
 	public void addMessage(String summary, String detail) {
+
+		FacesContext context = FacesContext.getCurrentInstance();
+
 		FacesMessage message = new FacesMessage(FacesMessage.SEVERITY_INFO, summary, detail);
-		FacesContext.getCurrentInstance().addMessage(null, message);
+
+		if (context == null) {
+			// Diese Methode kann nur innerhalb eines JSF-Lifecycle aufgrufen werden.
+			// Wie dieser durch ein Event vom Server gestartet wird habe ich noch nicht
+			// verstanden ;-(
+
+		} else {
+			context.addMessage(null, message);
+		}
+
 	}
 
+	@Override
+	public void newClientRequest(int mid, String name, String ip, String request) throws RemoteException {
+		addMessage(name, request);
+	}
 }

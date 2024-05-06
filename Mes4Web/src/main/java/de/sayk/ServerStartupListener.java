@@ -4,6 +4,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.rmi.RemoteException;
 
+import javax.faces.application.FacesMessage;
+import javax.faces.context.FacesContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.ws.rs.ProcessingException;
@@ -29,7 +31,7 @@ public class ServerStartupListener implements ServletContextListener {
 		try {
 			log.debug("init servlet...");
 			msrv = new MesServer();
-
+			
 			log.debug("starte MES...");
 			msrv.setup();
 			serverThread = new Thread(msrv);
@@ -73,5 +75,12 @@ public class ServerStartupListener implements ServletContextListener {
 	public void contextDestroyed(ServletContextEvent sce) {
 		msrv.shutdown();
 	}
+
+	
+	public void addMessage(String summary, String detail) {
+		FacesMessage message = new FacesMessage(FacesMessage.SEVERITY_INFO, summary, detail);
+		FacesContext.getCurrentInstance().addMessage(null, message);
+	}
+
 
 }

@@ -76,7 +76,7 @@ public class MesServer implements Runnable, MesService {
 			}
 			// new thread for a client
 			new MessageThread(s).start();
-			log.info("new client accepted socket on port:2018");
+			log.debug("new client accepted socket on port:2018");
 		}
 	}
 
@@ -104,8 +104,8 @@ public class MesServer implements Runnable, MesService {
 
 				ServerResponse sr = new ServerResponse();
 				long start = new Date().getTime();
-				log.info("new request: methodId:" + methodId + ", clientId:" + clientId + ", inPara1:" + inPara1
-						+ ", inPara2:" + inPara2);
+				String logMessage = "methodId:" + methodId + ", clientId:" + clientId + ", inPara1:" + inPara1 +", inPara2:" + inPara2;
+				log.info(" * new request      : " + logMessage);
 				switch (methodId) {
 				case 100: // getOpForPartID(clientId, rfid)
 					sr = getOpForPartID(clientId, inPara1);
@@ -148,10 +148,10 @@ public class MesServer implements Runnable, MesService {
 
 				ObjectWorld.logSpsApi(clientId, inPara1, desc);
 
-				log.info("request complete: returnCode:" + sr.returnCode + ", outPara1:" + sr.outPara1 + ", outPara2:"
-						+ sr.outPara2);
 				long runningTime = new Date().getTime() - start;
-				log.info("request complete in [ms]:" + runningTime);
+
+				log.info("=> request complete : " + logMessage + " returnCode:" + sr.returnCode + ", outPara1:" + sr.outPara1 + ", outPara2:"
+						+ sr.outPara2 + " complete in [ms]:" + runningTime);
 
 			} catch (Exception e) {
 				log.error("problem TCI/IP communication", e);
@@ -331,8 +331,7 @@ public class MesServer implements Runnable, MesService {
 					if (lastPlaceNo != 0) {
 						parts[lastPlaceNo - 1] = null;
 
-						
-						//in Datenbank löschen
+						// in Datenbank löschen
 						try {
 							ObjectWorld.removePartFromStore(lastPlaceNo);
 						} catch (Exception e1) {
@@ -340,7 +339,6 @@ public class MesServer implements Runnable, MesService {
 							e1.printStackTrace();
 						}
 
-						
 						for (PartListener pl : partListeners) {
 							try {
 								pl.updatePart(null, lastPlaceNo);
@@ -356,8 +354,7 @@ public class MesServer implements Runnable, MesService {
 					if (placeNo != 0) {
 						parts[placeNo - 1] = activeOrder.getPart();
 
-						
-						//In Datenbank eintragen
+						// In Datenbank eintragen
 						try {
 							ObjectWorld.addPartToStore(placeNo, activeOrder.getPart().getId());
 						} catch (Exception e1) {
@@ -365,8 +362,6 @@ public class MesServer implements Runnable, MesService {
 							e1.printStackTrace();
 						}
 
-						
-						
 						for (PartListener pl : partListeners) {
 							try {
 								pl.updatePart(activeOrder.getPart(), placeNo);
@@ -394,8 +389,7 @@ public class MesServer implements Runnable, MesService {
 				activeOrder.endProcess(nextStep);
 
 				sr.returnCode = 1;
-				
-				
+
 				// Update in Datenbank
 				try {
 					ObjectWorld.saveOrder(activeOrder);
@@ -403,7 +397,6 @@ public class MesServer implements Runnable, MesService {
 				} catch (Exception e) {
 					log.error(e);
 				}
-
 
 				for (OrderListener ol : orderListeners) {
 					// alle informieren Arbeitsschritt wird fertig angezeigt
@@ -444,7 +437,7 @@ public class MesServer implements Runnable, MesService {
 		// load fresh form database
 		parts = ObjectWorld.getAllPartsInStore();
 		orders = new HashMap<Integer, Order>();
-		
+
 		log.debug("benachitige " + partListeners.size() + " Listener");
 		for (PartListener pl : partListeners) {
 			log.debug("benachitige " + parts.length + " Teile");
@@ -494,6 +487,4 @@ public class MesServer implements Runnable, MesService {
 		clientListeners.add(cl);
 	}
 
-	
-	
 }
